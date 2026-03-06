@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageSquare, User, Calendar, ArrowRight, Filter } from 'lucide-react';
 import clsx from 'clsx';
 import { type Conversation } from '../types';
-import { fetchJson } from '../lib/api';
+import { mockFetchConversations, mockFetchSalespersons } from '../lib/mockApi';
 
 export const Conversations: React.FC = () => {
   const navigate = useNavigate();
@@ -19,11 +19,22 @@ export const Conversations: React.FC = () => {
   // Keep track of all unique salespersons for the dropdown filter
   // We populate this on the initial load and keep it stable even when filtering
   const [allSalespersons, setAllSalespersons] = useState<string[]>([]);
+  const [salespersonOptions, setSalespersonOptions] = useState<{ id: string; name: string }[]>([]);
 
   // Initial fetch to populate salespersons list (and initial data)
   useEffect(() => {
     fetchConversations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const fetchSalespersons = async () => {
+      try {
+        const data = await mockFetchSalespersons();
+        setAllSalespersons(data.map(sp => sp.name));
+        setSalespersonOptions(data);
+      } catch (err) {
+        console.error('Failed to fetch salespersons:', err);
+      }
+    };
+
+    fetchSalespersons();
   }, []); // Only run once on mount
 
   // Effect to re-fetch when filters change
@@ -42,18 +53,14 @@ export const Conversations: React.FC = () => {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
 
-      const queryString = params.toString();
-      const url = `/conversations${queryString ? `?${queryString}` : ''}`;
-      
-      const data = await fetchJson<Conversation[]>(url);
-      setConversations(data);
 
-      // If this is the first load (or we don't have salespersons yet), extract them
-      // Note: In a real app, we might want a separate endpoint for this list
-      if (allSalespersons.length === 0 && data.length > 0) {
-        const unique = Array.from(new Set(data.map(c => c.salespersonName))).sort();
-        setAllSalespersons(unique);
-      }
+      
+      const data = await mockFetchConversations(
+        salespersonFilter ? salespersonOptions.find(sp => sp.name === salespersonFilter)?.id : undefined,
+        startDate,
+        endDate
+      );
+      setConversations(data);
     } catch (err) {
       console.error('Failed to fetch conversations:', err);
       setError('Falha ao carregar conversas. Tente novamente.');

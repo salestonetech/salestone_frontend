@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import clsx from 'clsx';
 import { type Conversation } from '../types';
-import { fetchJson } from '../lib/api';
+import { mockFetchConversationById } from '../lib/mockApi';
 
 export const ConversationDetails: React.FC = () => {
   const { id } = useParams();
@@ -22,7 +22,7 @@ export const ConversationDetails: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchJson<Conversation>(`/conversations/${conversationId}`);
+      const data = await mockFetchConversationById(conversationId);
       setConversation(data);
     } catch (err) {
       console.error('Failed to fetch conversation:', err);
